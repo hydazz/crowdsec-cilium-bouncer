@@ -1,0 +1,90 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: crowdsec-system
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: crowdsec-bouncer-api
+  namespace: crowdsec-system
+stringData:
+  api-key: "REPLACE_ME"
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: crowdsec-cilium-bouncer
+  namespace: crowdsec-system
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: crowdsec-cilium-bouncer
+rules:
+  - apiGroups: ["cilium.io"]
+    resources: ["ciliumclusterwidenetworkpolicies"]
+    verbs: ["get", "list", "watch", "create", "update", "patch"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: crowdsec-cilium-bouncer
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: crowdsec-cilium-bouncer
+subjects:
+  - kind: ServiceAccount
+    name: crowdsec-cilium-bouncer
+    namespace: crowdsec-system
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: crowdsec-cilium-bouncer
+  namespace: crowdsec-system
+  labels:
+    app.kubernetes.io/name: crowdsec-cilium-bouncer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: crowdsec-cilium-bouncer
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: crowdsec-cilium-bouncer
+    spec:
+      serviceAccountName: crowdsec-cilium-bouncer
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+      containers:
+        - name: crowdsec-cilium-bouncer
+          image: ghcr.io/hydazz/crowdsec-cilium-bouncer:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: CROWDSEC_URL
+              value: http://crowdsec-service.crowdsec-system.svc.cluster.local:8080
+            - name: CROWDSEC_BOUNCER_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: crowdsec-bouncer-api
+                  key: api-key
+            - name: SYNC_INTERVAL
+              value: 30s
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi

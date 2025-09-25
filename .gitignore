@@ -1,0 +1,4 @@
+.cache/
+.gomodcache/
+bin/
+cover.out
