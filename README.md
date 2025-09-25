@@ -17,11 +17,12 @@ The bouncer is configured via environment variables:
 - `CILIUM_POLICY_LABELS`: Additional labels to add to the policy, formatted as `key=value` pairs separated by commas.
 - `CILIUM_ENDPOINT_SELECTOR`: Optional endpoint selector labels formatted as `key=value` pairs.
 - `CILIUM_DENY_INGRESS`: Set to `false` to skip ingress deny rules (default `true`).
-- `CILIUM_DENY_EGRESS`: Set to `false` to skip egress deny rules (default `true`).
+- `ALLOW_LOCAL_CIDRS`: Set to `true` to allow private/link-local addresses into the `CiliumClusterwideNetworkPolicy` (default `false`).
+- `LOG_LEVEL`: Adjust log verbosity (`debug`, `info`, `warn`, `error`; default `info`).
 
 ## Running
 
-The container is designed to run inside Kubernetes and relies on the in-cluster configuration to access the API server. Grant the pod a service account that can manage `CiliumClusterwideNetworkPolicies`. An end-to-end example is available in `examples/install.yaml`:
+The container is designed to run inside Kubernetes and relies on the in-cluster configuration to access the API server. Grant the pod a service account that can manage `CiliumClusterwideNetworkPolicies`. An example is available in `examples/install.yaml`:
 
 ```bash
 kubectl apply -f examples/install.yaml

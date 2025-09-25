@@ -121,7 +121,9 @@ func (c *Client) FetchDecisions(ctx context.Context, filters DecisionFilters) ([
 		return nil, fmt.Errorf("query decisions: %w", err)
 	}
 
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("crowdsec returned %s", resp.Status)

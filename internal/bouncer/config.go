@@ -2,6 +2,7 @@ package bouncer
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 	"strconv"
 	"strings"
@@ -22,7 +23,8 @@ type Config struct {
 	PolicyLabels        map[string]string
 	EndpointSelector    map[string]string
 	DenyIngress         bool
-	DenyEgress          bool
+	AllowLocalCIDRs     bool
+	LogLevel            slog.Level
 }
 
 // LoadConfigFromEnv builds a Config from environment variables.
@@ -37,7 +39,8 @@ func LoadConfigFromEnv() (Config, error) {
 		},
 		EndpointSelector: map[string]string{},
 		DenyIngress:      true,
-		DenyEgress:       true,
+		AllowLocalCIDRs:  false,
+		LogLevel:         slog.LevelInfo,
 	}
 
 	var missing []string
@@ -124,12 +127,20 @@ func LoadConfigFromEnv() (Config, error) {
 		cfg.DenyIngress = deny
 	}
 
-	if value := strings.TrimSpace(os.Getenv("CILIUM_DENY_EGRESS")); value != "" {
-		deny, err := strconv.ParseBool(value)
+	if value := strings.TrimSpace(os.Getenv("ALLOW_LOCAL_CIDRS")); value != "" {
+		allow, err := strconv.ParseBool(value)
 		if err != nil {
-			return cfg, fmt.Errorf("invalid CILIUM_DENY_EGRESS: %w", err)
+			return cfg, fmt.Errorf("invalid ALLOW_LOCAL_CIDRS: %w", err)
 		}
-		cfg.DenyEgress = deny
+		cfg.AllowLocalCIDRs = allow
+	}
+
+	if value := strings.TrimSpace(os.Getenv("LOG_LEVEL")); value != "" {
+		var level slog.Level
+		if err := level.UnmarshalText([]byte(strings.ToLower(value))); err != nil {
+			return cfg, fmt.Errorf("invalid LOG_LEVEL: %w", err)
+		}
+		cfg.LogLevel = level
 	}
 
 	return cfg, nil
