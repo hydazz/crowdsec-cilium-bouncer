@@ -75,6 +75,8 @@ spec:
                   key: api-key
             - name: SYNC_INTERVAL
               value: 30s
+            - name: CROWDSEC_TIMEOUT
+              value: 1m
             - name: LOG_LEVEL
               value: info
           resources:

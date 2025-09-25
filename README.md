@@ -8,7 +8,9 @@ The bouncer is configured via environment variables:
 
 - `CROWDSEC_URL` (required): Address of the CrowdSec Local API, e.g. `http://crowdsec-service.crowdsec-system.svc.cluster.local:8080`.
 - `CROWDSEC_BOUNCER_API_KEY` (required): API key for the CrowdSec bouncer.
-- `CROWDSEC_TIMEOUT`: HTTP timeout when talking to CrowdSec (default `10s`).
+- `CROWDSEC_TIMEOUT`: HTTP timeout when talking to CrowdSec (default `1m`).
+- `CROWDSEC_MAX_RETRIES`: Number of attempts when fetching decisions before giving up (default `3`).
+- `CROWDSEC_RETRY_BACKOFF`: Delay between CrowdSec fetch retries (default `5s`).
 - `CROWDSEC_INSECURE_SKIP_VERIFY`: Set to `true` to skip TLS verification when using HTTPS.
 - `CROWDSEC_FILTER_SCOPES`: Comma separated scopes to include (e.g. `Ip,Range`).
 - `CROWDSEC_FILTER_TYPES`: Comma separated decision types to include (e.g. `ban`).

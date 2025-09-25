@@ -63,6 +63,10 @@ func NewClient(cfg Config) (*Client, error) {
 	}
 
 	transport := http.DefaultTransport.(*http.Transport).Clone()
+	transport.DisableKeepAlives = true
+	transport.MaxIdleConns = 1
+	transport.MaxIdleConnsPerHost = 1
+	transport.IdleConnTimeout = 30 * time.Second
 	if parsed.Scheme == "https" && cfg.InsecureSkipVerify {
 		if transport.TLSClientConfig == nil {
 			transport.TLSClientConfig = &tls.Config{}

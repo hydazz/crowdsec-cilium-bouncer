@@ -93,7 +93,7 @@ func (r *Runner) Run(ctx context.Context) error {
 func (r *Runner) syncOnce(ctx context.Context) error {
 	start := r.now()
 
-	decisions, err := r.crowd.FetchDecisions(ctx, r.cfg.Filters)
+	decisions, err := r.fetchDecisions(ctx)
 	if err != nil {
 		return fmt.Errorf("fetch decisions: %w", err)
 	}
@@ -152,6 +152,39 @@ func (r *Runner) syncOnce(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+func (r *Runner) fetchDecisions(ctx context.Context) ([]crowdsec.Decision, error) {
+	attempts := r.cfg.CrowdSecMaxRetries
+	if attempts < 1 {
+		attempts = 1
+	}
+
+	var lastErr error
+	for attempt := 1; attempt <= attempts; attempt++ {
+		fetchCtx, cancel := context.WithTimeout(ctx, r.cfg.CrowdSecTimeout)
+		decisions, err := r.crowd.FetchDecisions(fetchCtx, r.cfg.Filters)
+		cancel()
+		if err == nil {
+			if attempt > 1 {
+				r.log.Debug("crowdsec fetch succeeded after retry", "attempt", attempt)
+			}
+			return decisions, nil
+		}
+
+		lastErr = err
+		r.log.Warn("crowdsec fetch attempt failed", "attempt", attempt, "error", err)
+
+		if attempt < attempts {
+			select {
+			case <-ctx.Done():
+				return nil, ctx.Err()
+			case <-time.After(r.cfg.CrowdSecRetryBackoff):
+			}
+		}
+	}
+
+	return nil, lastErr
 }
 
 func applyPolicy(ctx context.Context, kubeClient client.Client, policy *unstructured.Unstructured) (bool, error) {
