@@ -42,14 +42,10 @@ func BuildClusterwidePolicy(name string, labels map[string]string, endpointSelec
 
 	if denyIngress {
 		spec["ingressDeny"] = []interface{}{buildCIDRSet("fromCIDRSet", sorted)}
-	} else {
-		spec["ingressDeny"] = []interface{}{}
 	}
 
 	if denyEgress {
 		spec["egressDeny"] = []interface{}{buildCIDRSet("toCIDRSet", sorted)}
-	} else {
-		spec["egressDeny"] = []interface{}{}
 	}
 
 	policy.Object["spec"] = spec
