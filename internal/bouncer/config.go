@@ -17,6 +17,8 @@ type Config struct {
 	CrowdSecAPIKey      string
 	CrowdSecTimeout     time.Duration
 	CrowdSecInsecureTLS bool
+	CrowdSecMaxRetries  int
+	CrowdSecRetryBackoff time.Duration
 	SyncInterval        time.Duration
 	Filters             crowdsec.DecisionFilters
 	PolicyName          string
@@ -30,7 +32,9 @@ type Config struct {
 // LoadConfigFromEnv builds a Config from environment variables.
 func LoadConfigFromEnv() (Config, error) {
 	cfg := Config{
-		CrowdSecTimeout: 10 * time.Second,
+		CrowdSecTimeout: time.Minute,
+		CrowdSecMaxRetries: 3,
+		CrowdSecRetryBackoff: 5 * time.Second,
 		SyncInterval:    30 * time.Second,
 		PolicyName:      "crowdsec-cilium-bouncer",
 		PolicyLabels: map[string]string{
@@ -87,6 +91,28 @@ func LoadConfigFromEnv() (Config, error) {
 			return cfg, fmt.Errorf("SYNC_INTERVAL must be positive")
 		}
 		cfg.SyncInterval = duration
+	}
+
+	if value := strings.TrimSpace(os.Getenv("CROWDSEC_MAX_RETRIES")); value != "" {
+		retries, err := strconv.Atoi(value)
+		if err != nil {
+			return cfg, fmt.Errorf("invalid CROWDSEC_MAX_RETRIES: %w", err)
+		}
+		if retries < 1 {
+			retries = 1
+		}
+		cfg.CrowdSecMaxRetries = retries
+	}
+
+	if value := strings.TrimSpace(os.Getenv("CROWDSEC_RETRY_BACKOFF")); value != "" {
+		duration, err := time.ParseDuration(value)
+		if err != nil {
+			return cfg, fmt.Errorf("invalid CROWDSEC_RETRY_BACKOFF: %w", err)
+		}
+		if duration < time.Second {
+			duration = time.Second
+		}
+		cfg.CrowdSecRetryBackoff = duration
 	}
 
 	if value := strings.TrimSpace(os.Getenv("CROWDSEC_FILTER_SCOPES")); value != "" {

@@ -93,7 +93,7 @@ func (r *Runner) Run(ctx context.Context) error {
 func (r *Runner) syncOnce(ctx context.Context) error {
 	start := r.now()
 
-	decisions, err := r.crowd.FetchDecisions(ctx, r.cfg.Filters)
+    decisions, err := r.fetchDecisions(ctx)
 	if err != nil {
 		return fmt.Errorf("fetch decisions: %w", err)
 	}
